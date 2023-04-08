@@ -631,8 +631,8 @@ func (s *SyncService) GasPriceOracleOwnerAddress() *common.Address {
 	return &s.gasPriceOracleOwnerAddress
 }
 
-/// Update the execution context's timestamp and blocknumber
-/// over time. This is only necessary for the sequencer.
+// / Update the execution context's timestamp and blocknumber
+// / over time. This is only necessary for the sequencer.
 func (s *SyncService) updateL1BlockNumber() error {
 
 	context, err := s.client.GetLatestEthContext()
@@ -1250,12 +1250,12 @@ func (s *SyncService) verifyStateRoot(tx *types.Transaction, batchRoot common.Ha
 			continue
 		}
 		if stateRootHash != localStateRoot {
-			return txIndex, stateRootHash.Hex(), localStateRoot.Hex(), fmt.Errorf("The remote stateroot is not equal to the local: tx index %d, remote %w, local %w, batch-root %w", txIndex, stateRootHash.Hex(), localStateRoot.Hex(), batchRoot.Hex())
+			return txIndex, stateRootHash.Hex(), localStateRoot.Hex(), fmt.Errorf("The remote stateroot is not equal to the local: tx index %d, remote %v, local %v, batch-root %v", txIndex, stateRootHash.Hex(), localStateRoot.Hex(), batchRoot.Hex())
 		}
 		log.Info("Verified tx with stateroot ok", "i", i, "index", txIndex, "batch-root", batchRoot.Hex())
 		return txIndex, stateRootHash.Hex(), localStateRoot.Hex(), nil
 	}
-	return txIndex, "", "", fmt.Errorf("Fetch stateroot failed: index %w", txIndex)
+	return txIndex, "", "", fmt.Errorf("Fetch stateroot failed: index %v", txIndex)
 }
 
 // syncQueue will sync from the local tip to the known tip of the remote
