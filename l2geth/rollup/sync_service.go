@@ -68,6 +68,7 @@ type SyncService struct {
 	txpool                         *core.TxPool
 	RollupGpo                      *gasprice.RollupOracle
 	client                         RollupClient
+	seqAdapter                     RollupAdapter
 	syncing                        atomic.Value
 	chainHeadSub                   event.Subscription
 	OVMContext                     OVMContext
@@ -122,6 +123,9 @@ func NewSyncService(ctx context.Context, cfg Config, txpool *core.TxPool, bc *co
 	client := NewClient(cfg.RollupClientHttp, chainID)
 	log.Info("Configured rollup client", "url", cfg.RollupClientHttp, "chain-id", chainID.Uint64(), "ctc-deploy-height", cfg.CanonicalTransactionChainDeployHeight)
 
+	seqAdapter := NewSeqAdapter(cfg.SeqsetContract, cfg.SeqsetValidHeight, cfg.PosClientHttp, cfg.LocalL2ClientHttp)
+	log.Info("Configured seqAdapter", "url", cfg.PosClientHttp, "SeqsetContract", cfg.SeqsetContract, "SeqsetValidHeight", cfg.SeqsetValidHeight)
+
 	// Ensure sane values for the fee thresholds
 	if cfg.FeeThresholdDown != nil {
 		// The fee threshold down should be less than 1
@@ -150,6 +154,7 @@ func NewSyncService(ctx context.Context, cfg Config, txpool *core.TxPool, bc *co
 		txApplyErrCh: make(chan error, 1),
 
 		client:                         client,
+		seqAdapter:                     seqAdapter,
 		db:                             db,
 		pollInterval:                   pollInterval,
 		timestampRefreshThreshold:      timestampRefreshThreshold,
@@ -844,6 +849,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	ts := s.GetLatestL1Timestamp()
 	bn := s.GetLatestL1BlockNumber()
 
+	// check is
 	// The L1Timestamp is 0 for QueueOriginSequencer transactions when
 	// running as the sequencer, the transactions are coming in via RPC.
 	// This code path also runs for replicas/verifiers so any logic involving
