@@ -1,6 +1,7 @@
 go 1.20
 
 use (
+	./batch-submitter
 	./go/batch-submitter
 	./go/gas-oracle
 	./go/utils

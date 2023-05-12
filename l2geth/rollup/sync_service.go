@@ -708,6 +708,10 @@ func (s *SyncService) SetLatestEnqueueIndex(index *uint64) {
 	}
 }
 
+func (s *SyncService) GetLatestIndexTime() *uint64 {
+	return rawdb.ReadHeadIndexTime(s.db)
+}
+
 // GetLatestIndex reads the last CTC index that was processed
 func (s *SyncService) GetLatestIndex() *uint64 {
 	return rawdb.ReadHeadIndex(s.db)
@@ -727,6 +731,12 @@ func (s *SyncService) SetLatestIndex(index *uint64) {
 	if index != nil {
 		rawdb.WriteHeadIndex(s.db, *index)
 	}
+}
+
+func (s *SyncService) SetLatestIndexTime(indexTime int64) {
+
+	rawdb.WriteHeadIndexTime(s.db, indexTime)
+
 }
 
 // GetLatestVerifiedIndex reads the last verified CTC index that was processed
@@ -865,7 +875,7 @@ func (s *SyncService) applyHistoricalTransaction(tx *types.Transaction) error {
 			newIndex := (*index) - 1
 			s.SetLatestIndex(&newIndex)
 		}
-		// 重新执行一把， index
+		// 重新执行一次tx
 		return s.applyIndexedTransaction(tx)
 	} else {
 		log.Debug("Historical transaction matches", "index", *index, "hash", tx.Hash().Hex())
@@ -1041,6 +1051,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	if tx.L1Timestamp() > ts {
 		s.SetLatestL1Timestamp(tx.L1Timestamp())
 	}
+	// store current time for the last index time
 
 	//index := s.GetLatestIndex()
 	if tx.GetMeta().Index == nil {
@@ -1064,6 +1075,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	// the case where the index is updated but the
 	// transaction isn't yet added to the chain
 	s.SetLatestIndex(tx.GetMeta().Index)
+	s.SetLatestIndexTime(time.Now().Unix())
 	s.SetLatestVerifiedIndex(tx.GetMeta().Index)
 	if queueIndex := tx.GetMeta().QueueIndex; queueIndex != nil {
 		s.SetLatestEnqueueIndex(queueIndex)
