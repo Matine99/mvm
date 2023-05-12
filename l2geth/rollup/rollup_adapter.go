@@ -30,6 +30,7 @@ type RollupAdapter interface {
 	// check current seqencer is working
 	// CheckSeqencerIsWorking() bool
 	//
+	GetSeqValidHeight() uint64
 	CheckPosLayerSynced() (bool, error)
 }
 
@@ -83,6 +84,9 @@ func (s *SeqAdapter) getSeqencer(expectIndex uint64) (common.Address, error) {
 	}
 	return seqContract.GetMetisSequencer(nil, big.NewInt(int64(expectIndex)))
 
+}
+func (s *SeqAdapter) GetSeqValidHeight() uint64 {
+	return s.seqContractValidHeight
 }
 func (s *SeqAdapter) GetTxSeqencer(tx *types.Transaction, expectIndex uint64) (common.Address, error) {
 	// check is update seqencer operate

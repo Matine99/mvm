@@ -911,8 +911,20 @@ var (
 
 	SeqsetConrtractFlag = cli.StringFlag{
 		Name:   "seqset.contract",
-		Usage:  "sesset contract address ",
+		Usage:  "seqset contract address ",
 		EnvVar: "SEQSET_CONTRACT",
+	}
+
+	SeqAddressFlag = cli.StringFlag{
+		Name:   "seq.address",
+		Usage:  "sequencer address ",
+		EnvVar: "SEQ_ADDRESS",
+	}
+
+	SeqPrivFlag = cli.StringFlag{
+		Name:   "seq.priv",
+		Usage:  "sequencer priv key",
+		EnvVar: "SEQ_PRIV",
 	}
 )
 
@@ -1206,6 +1218,12 @@ func setRollup(ctx *cli.Context, cfg *rollup.Config) {
 	if ctx.GlobalIsSet(SeqsetValidHeightFlag.Name) {
 		height := ctx.GlobalInt64(SeqsetValidHeightFlag.Name)
 		cfg.SeqsetValidHeight = uint64(height)
+	}
+	if ctx.GlobalIsSet(SeqAddressFlag.Name) {
+		cfg.SeqAddress = ctx.GlobalString(SeqAddressFlag.Name)
+	}
+	if ctx.GlobalIsSet(SeqPrivFlag.Name) {
+		cfg.SeqPriv = ctx.GlobalString(SeqPrivFlag.Name)
 	}
 }
 

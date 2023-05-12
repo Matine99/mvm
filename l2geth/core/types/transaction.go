@@ -51,6 +51,14 @@ type Transaction struct {
 
 	// l2 tx tag
 	l2tx uint
+	// l2 tx seq signature
+	seqSignature *SeqSign
+}
+
+type SeqSign struct {
+	R *big.Int
+	S *big.Int
+	V *big.Int
 }
 
 type txdata struct {
@@ -217,6 +225,13 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 
 func (t *Transaction) SetL2Tx(l2tx uint) {
 	t.l2tx = l2tx
+}
+
+func (t *Transaction) SetSeqSign(signResult *SeqSign) {
+	t.seqSignature = signResult
+}
+func (t *Transaction) GetSeqSign() *SeqSign {
+	return t.seqSignature
 }
 
 // MarshalJSON encodes the web3 RPC transaction format.
