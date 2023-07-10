@@ -1009,10 +1009,14 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 		log.Error("GetTxSeqencer err ", err)
 		return err
 	}
+	isActiveSeq := true
+	if expectSeq.String() != s.SeqAddress {
+		isActiveSeq = false
+	}
 	// current is not seq, just skip it
 	if index != nil && *index >= s.seqAdapter.GetSeqValidHeight() {
 		signature := tx.GetSeqSign()
-		if signature == nil && expectSeq.String() != s.SeqAddress {
+		if signature == nil && !isActiveSeq {
 			errInfo := fmt.Sprintf("current node %v, is not expect seq %v, so don't sequence it", s.SeqAddress, expectSeq.String())
 			log.Info(errInfo)
 			return nil
@@ -1085,12 +1089,20 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	// store current time for the last index time
 
 	//index := s.GetLatestIndex()
+	needSequenceIndex := false
 	if tx.GetMeta().Index == nil {
+		needSequenceIndex = true
+		log.Info("applyTransactionToTip tx.GetMeta().Index is null")
 		if index == nil {
 			tx.SetIndex(0)
 		} else {
 			tx.SetIndex(*index + 1)
 		}
+	}
+	if needSequenceIndex && !isActiveSeq {
+		log.Info("applyTransactionToTip", "tx", tx.Hash().Hex(), "error", "is not active seq")
+		errInfo := fmt.Sprintf("current node %v, is not expect seq %v, so don't sequence it", s.SeqAddress, expectSeq.String())
+		return errors.New(errInfo)
 	}
 	// add seq signature
 	if index != nil && *index > s.seqAdapter.GetSeqValidHeight() {
@@ -1114,6 +1126,11 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	// The index was set above so it is safe to dereference
 	log.Debug("Applying transaction to tip", "index", *tx.GetMeta().Index, "hash", tx.Hash().Hex(), "origin", tx.QueueOrigin().String())
 
+	// may be we don't need to send the new tx event if not the active seqencer
+	if !isActiveSeq {
+		log.Info("applyTransactionToTip is not active seq so don't broadcast tx", "hash", tx.Hash().Hex())
+		return nil
+	}
 	txs := types.Transactions{tx}
 	errCh := make(chan error, 1)
 	// send to handle the new tx
