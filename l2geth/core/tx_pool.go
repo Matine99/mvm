@@ -763,6 +763,9 @@ func (pool *TxPool) AddLocals(txs []*types.Transaction) []error {
 // AddLocal enqueues a single local transaction into the pool if it is valid. This is
 // a convenience wrapper aroundd AddLocals.
 func (pool *TxPool) AddLocal(tx *types.Transaction) error {
+	for _, tx := range txs {
+		log.Info("AddLocal ", "tx", tx.Hash().Hex())
+	}
 	errs := pool.AddLocals([]*types.Transaction{tx})
 	return errs[0]
 }
@@ -773,11 +776,17 @@ func (pool *TxPool) AddLocal(tx *types.Transaction) error {
 // This method is used to add transactions from the p2p network and does not wait for pool
 // reorganization and internal event propagation.
 func (pool *TxPool) AddRemotes(txs []*types.Transaction) []error {
+	for _, tx := range txs {
+		log.Info("AddRemotes ", "tx", tx.Hash().Hex())
+	}
 	return pool.addTxs(txs, false, false)
 }
 
 // This is like AddRemotes, but waits for pool reorganization. Tests use this method.
 func (pool *TxPool) AddRemotesSync(txs []*types.Transaction) []error {
+	for _, tx := range txs {
+		log.Info("AddRemotesSync ", "tx", tx.Hash().Hex())
+	}
 	return pool.addTxs(txs, false, true)
 }
 

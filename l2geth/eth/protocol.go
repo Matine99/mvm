@@ -60,7 +60,11 @@ const (
 	NodeDataMsg        = 0x0e
 	GetReceiptsMsg     = 0x0f
 	ReceiptsMsg        = 0x10
+	NewPooledTransactionHashesMsg = 0x08
+	GetPooledTransactionsMsg      = 0x09
+	PooledTransactionsMsg         = 0x0a
 )
+
 
 type errCode int
 
