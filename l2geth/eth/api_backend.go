@@ -358,7 +358,10 @@ func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction)
 				log.Warn("Dial to a new proxy rpc client failed", "url", l2Url, "err", err)
 				return err
 			}
-			return rpcClient.SendTransaction(ctx, signedTx)
+			signedTx.SetL2Tx(2)
+			err = rpcClient.SendTransaction(ctx, signedTx)
+			signedTx.SetL2Tx(1)
+			return err
 		}
 	}
 	// OVM Disabled
