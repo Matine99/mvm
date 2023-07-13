@@ -18,9 +18,11 @@ package eth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum-optimism/optimism/l2geth/accounts"
@@ -34,6 +36,7 @@ import (
 	"github.com/ethereum-optimism/optimism/l2geth/core/vm"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/downloader"
 	"github.com/ethereum-optimism/optimism/l2geth/eth/gasprice"
+	"github.com/ethereum-optimism/optimism/l2geth/ethclient"
 	"github.com/ethereum-optimism/optimism/l2geth/ethdb"
 	"github.com/ethereum-optimism/optimism/l2geth/event"
 	"github.com/ethereum-optimism/optimism/l2geth/log"
@@ -52,8 +55,26 @@ type EthAPIBackend struct {
 	gasLimit        uint64
 	UsingOVM        bool
 	MaxCallDataSize int
+
+	seqInfos   map[common.Address]string
+	seqRwMutex sync.RWMutex
 }
 
+func NewEthAPIBackend(extRPCEnabled bool, eth *Ethereum, gpo *gasprice.Oracle, rollupGpo *gasprice.RollupOracle, verifier bool, gasLimit uint64, UsingOVM bool, MaxCallDataSize int) *EthAPIBackend {
+	b := &EthAPIBackend{}
+	b.extRPCEnabled = extRPCEnabled
+	b.eth = eth
+	b.gpo = gpo
+	b.rollupGpo = rollupGpo
+	b.verifier = verifier
+	b.gasLimit = gasLimit
+	b.UsingOVM = UsingOVM
+	b.MaxCallDataSize = MaxCallDataSize
+	b.seqRwMutex.Lock()
+	defer b.seqRwMutex.Unlock()
+	b.seqInfos = make(map[common.Address]string)
+	return b
+}
 func (b *EthAPIBackend) IsVerifier() bool {
 	return b.verifier
 }
@@ -310,21 +331,35 @@ func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction)
 		return err
 	}
 	log.Info("SendTx", "expectSeq.String() ", expectSeq.String(), " b.eth.syncService.SeqAddress ", b.eth.syncService.SeqAddress)
-	if b.UsingOVM && expectSeq.String() == b.eth.syncService.SeqAddress {
-		log.Info("current b usingovm true, begin to ValidateAndApplySequencerTransaction")
-		to := signedTx.To()
-		if to != nil {
-			// Prevent QueueOriginSequencer transactions that are too large to
-			// be included in a batch. The `MaxCallDataSize` should be set to
-			// the layer one consensus max transaction size in bytes minus the
-			// constant sized overhead of a batch. This will prevent
-			// a layer two transaction from not being able to be batch submitted
-			// to layer one.
-			if len(signedTx.Data()) > b.MaxCallDataSize {
-				return fmt.Errorf("calldata cannot be larger than %d, sent %d", b.MaxCallDataSize, len(signedTx.Data()))
+	if b.UsingOVM {
+		if expectSeq.String() == b.eth.syncService.SeqAddress {
+			log.Info("current b usingovm true, begin to ValidateAndApplySequencerTransaction")
+			to := signedTx.To()
+			if to != nil {
+				// Prevent QueueOriginSequencer transactions that are too large to
+				// be included in a batch. The `MaxCallDataSize` should be set to
+				// the layer one consensus max transaction size in bytes minus the
+				// constant sized overhead of a batch. This will prevent
+				// a layer two transaction from not being able to be batch submitted
+				// to layer one.
+				if len(signedTx.Data()) > b.MaxCallDataSize {
+					return fmt.Errorf("calldata cannot be larger than %d, sent %d", b.MaxCallDataSize, len(signedTx.Data()))
+				}
 			}
+			return b.eth.syncService.ValidateAndApplySequencerTransaction(signedTx)
+		} else {
+			// send to current seqencer
+			l2Url := b.GetSeqUrl(expectSeq)
+			if l2Url == "" {
+				return fmt.Errorf("seqencer %v setting missing on %v", expectSeq.String(), b.eth.syncService.SeqAddress)
+			}
+			rpcClient, err := ethclient.Dial(l2Url)
+			if err != nil {
+				log.Warn("Dial to a new proxy rpc client failed", "url", l2Url, "err", err)
+				return err
+			}
+			return rpcClient.SendTransaction(ctx, signedTx)
 		}
-		return b.eth.syncService.ValidateAndApplySequencerTransaction(signedTx)
 	}
 	// OVM Disabled
 	log.Info("current b usingovm false, begin to AddLocal")
@@ -459,4 +494,41 @@ func (b *EthAPIBackend) IsSequencerWorking() bool {
 		}
 	}
 	return true
+}
+
+func (b *EthAPIBackend) AddSeqencerInfo(ctx context.Context, seq *types.SequencerInfo) error {
+	b.seqRwMutex.Lock()
+	defer b.seqRwMutex.Unlock()
+	b.seqInfos[seq.SequencerAddress] = seq.SequencerUrl
+	return nil
+}
+
+func (b *EthAPIBackend) GetSeqUrl(seqAddr common.Address) string {
+	b.seqRwMutex.RLock()
+	defer b.seqRwMutex.RUnlock()
+	url, ok := b.seqInfos[seqAddr]
+	if ok {
+		return url
+	}
+	for _, v := range b.seqInfos {
+		return v
+	}
+	return ""
+}
+func (b *EthAPIBackend) ListSeqencerInfo() string {
+	var list types.SequencerInfoList
+	b.seqRwMutex.RLock()
+	defer b.seqRwMutex.RUnlock()
+	for k, v := range b.seqInfos {
+		seq := types.SequencerInfo{
+			SequencerAddress: k,
+			SequencerUrl:     v,
+		}
+		list.SeqList = append(list.SeqList, seq)
+	}
+	jsonData, err := json.Marshal(&list)
+	if err != nil {
+		return ""
+	}
+	return string(jsonData)
 }
