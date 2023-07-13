@@ -353,13 +353,18 @@ func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction)
 			if l2Url == "" {
 				return fmt.Errorf("seqencer %v setting missing on %v", expectSeq.String(), b.eth.syncService.SeqAddress)
 			}
+			log.Info("SendTx use proxy setting to send", "l2Url", l2Url)
 			rpcClient, err := ethclient.Dial(l2Url)
 			if err != nil {
 				log.Warn("Dial to a new proxy rpc client failed", "url", l2Url, "err", err)
 				return err
 			}
+			timeout := 2 * time.Second
+			// 使用 WithTimeout 创建一个带有超时的子级 context
+			callCtx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
 			signedTx.SetL2Tx(2)
-			err = rpcClient.SendTransaction(ctx, signedTx)
+			err = rpcClient.SendTransaction(callCtx, signedTx)
 			signedTx.SetL2Tx(1)
 			return err
 		}
