@@ -1099,7 +1099,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 			tx.SetIndex(*index + 1)
 		}
 	}
-	if needSequenceIndex && !isActiveSeq {
+	if needSequenceIndex && !isActiveSeq && tx.QueueOrigin() != types.QueueOriginL1ToL2 {
 		log.Info("applyTransactionToTip", "tx", tx.Hash().Hex(), "error", "is not active seq")
 		errInfo := fmt.Sprintf("current node %v, is not expect seq %v, so don't sequence it", s.SeqAddress, expectSeq.String())
 		return errors.New(errInfo)

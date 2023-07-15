@@ -322,15 +322,17 @@ func (b *EthAPIBackend) SendTx(ctx context.Context, signedTx *types.Transaction)
 	index := b.eth.syncService.GetLatestIndex()
 	var expectSeq common.Address
 	var err error
+	checkIndex := uint64(0)
 	if index == nil {
-		expectSeq, err = b.eth.syncService.GetTxSeqencer(signedTx, 0)
+		expectSeq, err = b.eth.syncService.GetTxSeqencer(signedTx, checkIndex)
 	} else {
-		expectSeq, err = b.eth.syncService.GetTxSeqencer(signedTx, *index+1)
+		checkIndex = *index + 1
+		expectSeq, err = b.eth.syncService.GetTxSeqencer(signedTx, checkIndex)
 	}
 	if err != nil {
 		return err
 	}
-	log.Info("SendTx", "expectSeq.String() ", expectSeq.String(), " b.eth.syncService.SeqAddress ", b.eth.syncService.SeqAddress)
+	log.Info("SendTx", "expectSeq.String() ", expectSeq.String(), " b.eth.syncService.SeqAddress ", b.eth.syncService.SeqAddress, "checkIndex", checkIndex)
 	if b.UsingOVM {
 		if expectSeq.String() == b.eth.syncService.SeqAddress {
 			log.Info("current b usingovm true, begin to ValidateAndApplySequencerTransaction")
