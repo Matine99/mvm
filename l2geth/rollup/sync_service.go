@@ -1356,6 +1356,7 @@ func (s *SyncService) isAtTip(index *uint64, get indexGetter) (bool, error) {
 	if latest == nil || index == nil {
 		return false, nil
 	}
+	log.Info("isAtTip", "index", *index, "lastest", *latest)
 	// The indices are equal
 	if *latest == *index {
 		return true, nil
