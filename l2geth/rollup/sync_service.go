@@ -906,6 +906,14 @@ func (s *SyncService) applyHistoricalTransaction(tx *types.Transaction) error {
 		// 重新执行一次tx
 		return s.applyIndexedTransaction(tx)
 	} else {
+		if queueIndex := tx.GetMeta().QueueIndex; queueIndex != nil {
+			lastQueueIndex := s.GetLatestEnqueueIndex()
+			if lastQueueIndex == nil || *lastQueueIndex < *queueIndex {
+				s.SetLatestEnqueueIndex(queueIndex)
+				log.Info("applyHistoricalTransaction ", "SetLatestEnqueueIndex", *queueIndex)
+			}
+
+		}
 		log.Debug("Historical transaction matches", "index", *index, "hash", tx.Hash().Hex())
 	}
 	return nil
