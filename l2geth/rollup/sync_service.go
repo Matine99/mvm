@@ -810,8 +810,10 @@ func (s *SyncService) SetLatestBatchIndex(index *uint64) {
 func (s *SyncService) applyTransaction(tx *types.Transaction) error {
 	log.Info("applyTransaction ", "tx", tx.Hash().String())
 	if tx.GetMeta().Index != nil {
+		//log.Info("applyIndexedTransaction ", "tx", tx.Hash().String())
 		return s.applyIndexedTransaction(tx)
 	}
+	//log.Info("applyTransactionToTip ", "tx", tx.Hash().String())
 	return s.applyTransactionToTip(tx)
 }
 
@@ -977,6 +979,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	if tx == nil {
 		return errors.New("nil transaction passed to applyTransactionToTip")
 	}
+	log.Info("applyTransactionToTip ", "tx", tx.Hash().String())
 	// Queue Origin L1 to L2 transactions must have a timestamp that is set by
 	// the L1 block that holds the transaction. This should never happen but is
 	// a sanity check to prevent fraudulent execution.
@@ -984,6 +987,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	// sequencer transaction.
 	if tx.QueueOrigin() == types.QueueOriginL1ToL2 {
 		if tx.L1Timestamp() == 0 {
+			log.Info("Queue origin L1 to L2 transaction without a timestamp", "tx", tx.Hash().Hex())
 			return fmt.Errorf("Queue origin L1 to L2 transaction without a timestamp: %s", tx.Hash().Hex())
 		}
 	}
@@ -994,7 +998,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	// now, the sequencer will assign a timestamp to each transaction.
 	ts := s.GetLatestL1Timestamp()
 	bn := s.GetLatestL1BlockNumber()
-
+	log.Info("applyTransactionToTip", "GetLatestL1Timestamp", ts, "GetLatestL1BlockNumber", bn)
 	// check is current address is seqencer
 	index := s.GetLatestIndex()
 	var expectSeq common.Address
