@@ -1133,8 +1133,11 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	s.SetLatestIndexTime(time.Now().Unix())
 	s.SetLatestVerifiedIndex(tx.GetMeta().Index)
 	if queueIndex := tx.GetMeta().QueueIndex; queueIndex != nil {
-		log.Info("applyTransactionToTip ", "SetLatestEnqueueIndex", *queueIndex)
-		s.SetLatestEnqueueIndex(queueIndex)
+		lastQueueIndex := s.GetLatestEnqueueIndex()
+		if *lastQueueIndex < *queueIndex {
+			log.Info("applyTransactionToTip ", "SetLatestEnqueueIndex", *queueIndex)
+			s.SetLatestEnqueueIndex(queueIndex)
+		}
 	}
 	// The index was set above so it is safe to dereference
 	log.Debug("Applying transaction to tip", "index", *tx.GetMeta().Index, "hash", tx.Hash().Hex(), "origin", tx.QueueOrigin().String())

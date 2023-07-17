@@ -88,3 +88,8 @@ engine.PayloadAttributes
 
 sh ./ops-bedrock/devnet-up-multi-metis.sh
 docker-compose -f ops-bedrock/docker-compose-multi-metis.yml down
+
+
+cd ~/go/src/metis-seq/mvm
+
+docker-compose -f ops/docker-compose-local.yml down
