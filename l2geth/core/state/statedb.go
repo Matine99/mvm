@@ -257,9 +257,12 @@ func (s *StateDB) GetBalance(addr common.Address) *big.Int {
 }
 
 func (s *StateDB) GetNonce(addr common.Address) uint64 {
+	log.Info("StateDB GetNonce", "addr", addr.String())
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.Nonce()
+		nonce := stateObject.Nonce()
+		log.Info("StateDB GetNonce", "addr", addr.String(), "nonce", nonce)
+		return nonce
 	}
 
 	return 0
@@ -425,7 +428,9 @@ func (s *StateDB) SetBalance(addr common.Address, amount *big.Int) {
 
 func (s *StateDB) SetNonce(addr common.Address, nonce uint64) {
 	stateObject := s.GetOrNewStateObject(addr)
+	log.Info("StateDB SetNonce", "addr", addr.String(), "nonce", nonce)
 	if stateObject != nil {
+		log.Info("stateObject SetNonce", "addr", addr.String(), "nonce", nonce)
 		stateObject.SetNonce(nonce)
 	}
 }
@@ -580,8 +585,8 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 // CreateAccount is called during the EVM CREATE operation. The situation might arise that
 // a contract does the following:
 //
-//   1. sends funds to sha(account ++ (nonce + 1))
-//   2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
+//  1. sends funds to sha(account ++ (nonce + 1))
+//  2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
 //
 // Carrying over the balance ensures that Ether doesn't disappear.
 func (s *StateDB) CreateAccount(addr common.Address) {
