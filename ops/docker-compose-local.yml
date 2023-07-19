@@ -120,7 +120,7 @@ services:
       - ${L2GETH_NODE_PORT:-30303}:30303
     restart: on-failure
     volumes:
-      - /root/go/src/metis-seq/mvm-data/l2geth:root/.ethereum
+      - /root/go/src/metis-seq/mvm-data/l2geth:/root/.ethereum
 
   l2gethB:
     depends_on:
@@ -155,7 +155,7 @@ services:
       - ${L2GETH_NODE_PORT:-40303}:30303
     restart: on-failure
     volumes:
-      - /root/go/src/metis-seq/mvm-data/l2gethB:root/.ethereum
+      - /root/go/src/metis-seq/mvm-data/l2gethB:/root/.ethereum
 
   l2geth-peer:
     depends_on:
