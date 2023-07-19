@@ -1033,7 +1033,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 		if signature == nil && !isActiveSeq {
 			errInfo := fmt.Sprintf("current node %v, is not expect seq %v, so don't sequence it", s.SeqAddress, expectSeq.String())
 			log.Info(errInfo)
-			return nil
+			//return nil
 		}
 		if signature != nil {
 			recoverSeq, err := s.recoverSeqAddress(tx)
