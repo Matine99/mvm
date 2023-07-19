@@ -1136,7 +1136,7 @@ func (s *SyncService) applyTransactionToTip(tx *types.Transaction) error {
 	s.SetLatestVerifiedIndex(tx.GetMeta().Index)
 	if queueIndex := tx.GetMeta().QueueIndex; queueIndex != nil {
 		lastQueueIndex := s.GetLatestEnqueueIndex()
-		if *lastQueueIndex < *queueIndex {
+		if lastQueueIndex != nil && *lastQueueIndex < *queueIndex {
 			log.Info("applyTransactionToTip ", "SetLatestEnqueueIndex", *queueIndex)
 			s.SetLatestEnqueueIndex(queueIndex)
 		}
