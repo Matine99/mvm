@@ -524,6 +524,21 @@ func (s *SyncService) SequencerLoop() {
 // transactions via the RPC. When reorg logic is enabled, this should
 // also call `syncBatchesToTip`
 func (s *SyncService) sequence() error {
+	index := s.GetLatestIndex()
+	checkIndex := uint64(0)
+	if index != nil {
+		checkIndex = *index
+	}
+	expectSeq, err := s.GetTxSeqencer(nil, checkIndex)
+	if err != nil {
+		log.Error("GetTxSeqencer err ", err)
+		return err
+	}
+	// is not current seqencer don't need to do this seqencer
+	if expectSeq.String() != s.SeqAddress {
+		log.Info("current is not seqencer don't need to do sequence()")
+		return nil
+	}
 	if err := s.syncQueueToTip(); err != nil {
 		return fmt.Errorf("Sequencer cannot sequence queue: %w", err)
 	}
